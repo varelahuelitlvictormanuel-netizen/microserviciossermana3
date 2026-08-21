@@ -27,8 +27,8 @@ import java.util.List;
 public class CitaServiceImpl implements CitaService {
 
     private static final List<EstadoCita> CITAS_ACTIVAS = List.of(
+            // ESTO ESTA MAL por que no lleva aceptada
             EstadoCita.PENDIENTE,
-            EstadoCita.ACEPTADA,
             EstadoCita.CONFIRMADA,
             EstadoCita.EN_CURSO
     );
