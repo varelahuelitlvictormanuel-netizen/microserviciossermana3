@@ -28,6 +28,7 @@ public class CitaServiceImpl implements CitaService {
 
     private static final List<EstadoCita> CITAS_ACTIVAS = List.of(
             EstadoCita.PENDIENTE,
+            EstadoCita.ACEPTADA,
             EstadoCita.CONFIRMADA,
             EstadoCita.EN_CURSO
     );
@@ -71,7 +72,10 @@ public class CitaServiceImpl implements CitaService {
 
         Cita cita = citaMapper.requestAEntidad(request);
         citaRepository.save(cita);
-        cambiarDisponibilidad(medico.id(), DisponibilidadMedico.NO_DISPONIBLE);
+
+        cambiarDisponibilidad(
+                medico.id(),
+                DisponibilidadMedico.NO_DISPONIBLE);
 
         return citaMapper.entidadAResponse(cita, paciente, medico);
     }
@@ -91,7 +95,8 @@ public class CitaServiceImpl implements CitaService {
 
         validarOtraCitaPaciente(request.idPaciente(), id);
 
-        MedicoResponse medico = medicoClient.obtenerMedicoActivoPorId(request.idMedico());
+        MedicoResponse medico =
+                medicoClient.obtenerMedicoActivoPorId(request.idMedico());
 
         if (!cita.getIdMedico().equals(request.idMedico())) {
             validarDisponibilidad(medico);
@@ -118,34 +123,50 @@ public class CitaServiceImpl implements CitaService {
     @Override
     public void actualizarEstadoCita(Long idCita, Long idEstadoCita) {
         Cita cita = obtenerCita(idCita);
-        EstadoCita estado = EstadoCita.obtenerEstadoCitaPorCodigo(idEstadoCita);
+        EstadoCita anterior = cita.getEstadoCita();
+        EstadoCita nuevo = EstadoCita.obtenerEstadoCitaPorCodigo(idEstadoCita);
 
-        cita.actualizarEstadoCita(estado);
-
-        switch (estado) {
-            case EN_CURSO -> cambiarDisponibilidad(
-                    cita.getIdMedico(),
-                    DisponibilidadMedico.EN_CONSULTA);
-
-            case FINALIZADA, CANCELADA -> cambiarDisponibilidad(
-                    cita.getIdMedico(),
-                    DisponibilidadMedico.DISPONIBLE);
+        if (!anterior.puedeCambiarA(nuevo)) {
+            throw new IllegalStateException(
+                    "No se puede cambiar la cita de "
+                            + anterior.getDescripcion()
+                            + " a "
+                            + nuevo.getDescripcion());
         }
 
-        log.info("Estado de cita {} actualizado a {}", idCita, estado);
+        cita.actualizarEstadoCita(nuevo);
+
+        switch (nuevo) {
+            case EN_CURSO ->
+                    cambiarDisponibilidad(
+                            cita.getIdMedico(),
+                            DisponibilidadMedico.EN_CONSULTA);
+
+            case FINALIZADA, CANCELADA ->
+                    cambiarDisponibilidad(
+                            cita.getIdMedico(),
+                            DisponibilidadMedico.DISPONIBLE);
+        }
+
+        log.info(
+                "Estado de cita {} actualizado de {} a {}",
+                idCita,
+                anterior,
+                nuevo);
     }
 
     @Override
     public void eliminar(Long id) {
         Cita cita = obtenerCita(id);
 
-        if (cita.getEstadoCita() == EstadoCita.PENDIENTE) {
+        if (CITAS_ACTIVAS.contains(cita.getEstadoCita())) {
             cambiarDisponibilidad(
                     cita.getIdMedico(),
                     DisponibilidadMedico.DISPONIBLE);
         }
 
         cita.eliminar();
+
         log.info("Cita {} eliminada lógicamente", id);
     }
 

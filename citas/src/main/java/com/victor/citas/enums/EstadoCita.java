@@ -1,6 +1,5 @@
 package com.victor.citas.enums;
 
-
 import com.victor.comons.exceptions.RecursoNoEncontradoException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -12,30 +11,42 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Getter
 public enum EstadoCita {
+
     PENDIENTE(1L, "Pendiente de confirmar", true, true) {
+        @Override
+        public Set<EstadoCita> puedeCambiar() {
+            return EnumSet.of(ACEPTADA, CANCELADA);
+        }
+    },
+
+    ACEPTADA(6L, "Cita aceptada por el médico", true, false) {
         @Override
         public Set<EstadoCita> puedeCambiar() {
             return EnumSet.of(CONFIRMADA, CANCELADA);
         }
     },
+
     CONFIRMADA(2L, "Confirmada por el paciente", true, false) {
         @Override
         public Set<EstadoCita> puedeCambiar() {
             return EnumSet.of(EN_CURSO, CANCELADA);
         }
     },
+
     EN_CURSO(3L, "Paciente llegó a su cita", true, false) {
         @Override
         public Set<EstadoCita> puedeCambiar() {
             return EnumSet.of(FINALIZADA);
         }
     },
+
     FINALIZADA(4L, "Cita finalizada", false, true) {
         @Override
         public Set<EstadoCita> puedeCambiar() {
             return Set.of();
         }
     },
+
     CANCELADA(5L, "Cita cancelada", false, true) {
         @Override
         public Set<EstadoCita> puedeCambiar() {
@@ -50,16 +61,19 @@ public enum EstadoCita {
 
     public abstract Set<EstadoCita> puedeCambiar();
 
-    public boolean puedeCambiarA(EstadoCita nuevoEstado){
+    public boolean puedeCambiarA(EstadoCita nuevoEstado) {
         return puedeCambiar().contains(nuevoEstado);
     }
 
-    public static EstadoCita obtenerEstadoCitaPorCodigo(Long codigo){
-        for (EstadoCita e : values()){
-            if (Objects.equals(e.codigo, codigo)){
-                return e;
+    public static EstadoCita obtenerEstadoCitaPorCodigo(Long codigo) {
+        for (EstadoCita estado : values()) {
+            if (Objects.equals(estado.codigo, codigo)) {
+                return estado;
             }
         }
-        throw new RecursoNoEncontradoException("Codigo de cita no válido: " + codigo);
+
+        throw new RecursoNoEncontradoException(
+                "Codigo de cita no válido: " + codigo
+        );
     }
 }
