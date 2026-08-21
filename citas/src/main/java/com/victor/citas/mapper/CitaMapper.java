@@ -15,8 +15,7 @@ public class CitaMapper implements CommonMapper<CitaRequest, CitaResponse, Cita>
 
     @Override
     public Cita requestAEntidad(CitaRequest request) {
-
-        if (request== null ) return null;
+        if (request == null) return null;
 
         return Cita.crear(
                 request.idPaciente(),
@@ -26,35 +25,38 @@ public class CitaMapper implements CommonMapper<CitaRequest, CitaResponse, Cita>
         );
     }
 
-
     @Override
-    public CitaResponse  entidadAResponse (Cita entidad) {
-        if (entidad == null)return null;
+    public CitaResponse entidadAResponse(Cita cita) {
+        if (cita == null) return null;
 
         return new CitaResponse(
-                entidad.getId(),
+                cita.getId(),
                 null,
                 null,
-                entidad.getFechaCita(),
-                entidad.getSintomas(),
-                entidad.getEstadoCita().getDescripcion()
+                cita.getFechaCita(),
+                cita.getSintomas(),
+                cita.getEstadoCita().getDescripcion()
         );
     }
 
-    public CitaResponse  entidadAResponse (Cita entidad, PacienteResponse paciente, MedicoResponse medico) {
-
-        if (entidad == null)return null;
+    public CitaResponse entidadAResponse(
+            Cita cita,
+            PacienteResponse paciente,
+            MedicoResponse medico
+    ) {
+        if (cita == null) return null;
 
         return new CitaResponse(
-                entidad.getId(),
-                pacienteResponseADatosPaciente(paciente),
-                medicoResponseAResponseADatosMedico(medico),
-                entidad.getFechaCita(),
-                entidad.getSintomas(),
-                entidad.getEstadoCita().getDescripcion()
+                cita.getId(),
+                convertirPaciente(paciente),
+                convertirMedico(medico),
+                cita.getFechaCita(),
+                cita.getSintomas(),
+                cita.getEstadoCita().getDescripcion()
         );
     }
-    private DatosPaciente pacienteResponseADatosPaciente(PacienteResponse paciente) {
+
+    private DatosPaciente convertirPaciente(PacienteResponse paciente) {
         if (paciente == null) return null;
 
         return new DatosPaciente(
@@ -64,29 +66,28 @@ public class CitaMapper implements CommonMapper<CitaRequest, CitaResponse, Cita>
                 paciente.peso() + " kg.",
                 paciente.estatura() + " m.",
                 paciente.email(),
-                Math.round(paciente.imc() * 100.0) / 100.0 + " " +
-                        clasificacionIMC(paciente.imc()),
+                Math.round(paciente.imc() * 100.0) / 100.0
+                        + " " + clasificarIMC(paciente.imc()),
                 paciente.telefono()
         );
     }
 
-    private String clasificacionIMC(double imc){
-        if (imc< 18.5) return "bajo peso";
-        if (imc< 25) return " peso normsl";
-        if (imc< 30) return "sobrepeso";
-        if (imc< 35) return "obesidad grado 1";
-        if (imc< 40) return "obesidad grado 2";
-
-        return  "obesidad grado 3";
+    private String clasificarIMC(double imc) {
+        if (imc < 18.5) return "bajo peso";
+        if (imc < 25) return "peso normal";
+        if (imc < 30) return "sobrepeso";
+        if (imc < 35) return "obesidad grado 1";
+        if (imc < 40) return "obesidad grado 2";
+        return "obesidad grado 3";
     }
 
-    private DatosMedico medicoResponseAResponseADatosMedico(MedicoResponse medico){
-        if (medico== null) return null;
+    private DatosMedico convertirMedico(MedicoResponse medico) {
+        if (medico == null) return null;
+
         return new DatosMedico(
                 medico.nombre(),
                 medico.cedulaProfesional(),
                 medico.especialidad()
-
         );
     }
 }
