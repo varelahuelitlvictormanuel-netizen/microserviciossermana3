@@ -12,6 +12,7 @@ import com.victor.medicos.mapper.MedicoMapper;
 import com.victor.medicos.repository.MedicoRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,19 +33,19 @@ public class MedicoServiceImpl implements MedicoService {
         return medicoMapper.entidadAResponse(
                 medicoRepository.findById(id)
                         .orElseThrow(() -> new RecursoNoEncontradoException(
-                                "Médico no encontrado con id: " + id)));
+                                "Médico no encontrado con id: " + id))
+        );
     }
 
     @Override
     public void actualizarDisponibilidadMedico(Long idMedico, Long idDisponibilidad) {
         Medico medico = obtenerMedicoActivoOrExcepcion(idMedico);
+
         DisponibilidadMedico disponibilidad =
                 DisponibilidadMedico.obtenerDisponibilidadPorCodigo(idDisponibilidad);
 
-        if (disponibilidad == DisponibilidadMedico.DISPONIBLE
-                && citaCliente.tieneCitaConfirmadaOEnCursoMedico(idMedico)) {
-            throw new IllegalStateException(
-                    "No se puede cambiar a DISPONIBLE porque el médico tiene una cita CONFIRMADA o EN_CURSO");
+        if (disponibilidad == DisponibilidadMedico.DISPONIBLE) {
+            validarCitaActiva(idMedico);
         }
 
         medico.atualizarDisponibilidad(disponibilidad);
@@ -62,7 +63,8 @@ public class MedicoServiceImpl implements MedicoService {
     @Override
     public MedicoResponse obtenerPorId(Long id) {
         return medicoMapper.entidadAResponse(
-                obtenerMedicoActivoOrExcepcion(id));
+                obtenerMedicoActivoOrExcepcion(id)
+        );
     }
 
     @Override
@@ -73,7 +75,8 @@ public class MedicoServiceImpl implements MedicoService {
 
         medico.actualizarEspecilidad(
                 EspecialidadMedico.obtenerEspecialidadPorCodigo(
-                        request.idEspecialidad()));
+                        request.idEspecialidad())
+        );
 
         medico.atualizarDisponibilidad(DisponibilidadMedico.DISPONIBLE);
 
@@ -98,7 +101,8 @@ public class MedicoServiceImpl implements MedicoService {
                 request.telefono(),
                 request.cedulaProfesional(),
                 EspecialidadMedico.obtenerEspecialidadPorCodigo(
-                        request.idEspecialidad()));
+                        request.idEspecialidad())
+        );
 
         return medicoMapper.entidadAResponse(medico);
     }
@@ -106,59 +110,77 @@ public class MedicoServiceImpl implements MedicoService {
     @Override
     public void eliminar(Long id) {
         Medico medico = obtenerMedicoActivoOrExcepcion(id);
+
         validarCitaActiva(id);
+
         medico.eliminar();
     }
 
     private Medico obtenerMedicoActivoOrExcepcion(Long id) {
         return medicoRepository.findByIdAndEstadoRegistro(
-                id, EstadoRegistro.ACTIVO
+                id,
+                EstadoRegistro.ACTIVO
         ).orElseThrow(() -> new RecursoNoEncontradoException(
                 "No se encontró el médico activo con id: " + id));
     }
 
     private void validarCitaActiva(Long idMedico) {
-        if (citaCliente.tieneCitaConfirmadaOEnCursoMedico(idMedico)) {
+        ResponseEntity<Void> respuesta =
+                citaCliente.validarAgendaMedico(idMedico);
+
+        if (respuesta.getStatusCode().is4xxClientError()) {
             throw new IllegalStateException(
-                    "El médico tiene una cita CONFIRMADA o EN_CURSO");
+                    "El médico tiene una cita CONFIRMADA o EN_CURSO"
+            );
         }
     }
 
     private void validarDatosUnicos(MedicoRequest request) {
+
         if (medicoRepository.existsByEmailIgnoreCaseAndEstadoRegistro(
-                request.email().trim(), EstadoRegistro.ACTIVO)) {
+                request.email().trim(),
+                EstadoRegistro.ACTIVO)) {
             throw new IllegalArgumentException(
                     "Ya existe un médico activo con el email ingresado");
         }
 
         if (medicoRepository.existsByTelefonoAndEstadoRegistro(
-                request.telefono().trim(), EstadoRegistro.ACTIVO)) {
+                request.telefono().trim(),
+                EstadoRegistro.ACTIVO)) {
             throw new IllegalArgumentException(
                     "Ya existe un médico activo con el teléfono ingresado");
         }
 
         if (medicoRepository.existsByCedulaProfesionalIgnoreCaseAndEstadoRegistro(
-                request.cedulaProfesional().trim(), EstadoRegistro.ACTIVO)) {
+                request.cedulaProfesional().trim(),
+                EstadoRegistro.ACTIVO)) {
             throw new IllegalArgumentException(
                     "Ya existe un médico activo con la cédula ingresada");
         }
     }
 
     private void validarCambioUnicos(MedicoRequest request, Long id) {
+
         if (medicoRepository.existsByEmailIgnoreCaseAndEstadoRegistroAndIdNot(
-                request.email().trim(), EstadoRegistro.ACTIVO, id)) {
+                request.email().trim(),
+                EstadoRegistro.ACTIVO,
+                id)) {
             throw new IllegalArgumentException(
                     "Ya existe un médico activo con el email ingresado");
         }
 
         if (medicoRepository.existsByTelefonoAndEstadoRegistroAndIdNot(
-                request.telefono().trim(), EstadoRegistro.ACTIVO, id)) {
+                request.telefono().trim(),
+                EstadoRegistro.ACTIVO,
+                id)) {
             throw new IllegalArgumentException(
                     "Ya existe un médico activo con el teléfono ingresado");
         }
 
         if (medicoRepository.existsByCedulaProfesionalIgnoreCaseAndEstadoRegistroAndIdNot(
-                request.cedulaProfesional().trim(), EstadoRegistro.ACTIVO, id)) {
+                request.cedulaProfesional().trim(),
+                EstadoRegistro.ACTIVO,
+                id)) {
             throw new IllegalArgumentException(
                     "Ya existe un médico activo con la cédula ingresada");
         }

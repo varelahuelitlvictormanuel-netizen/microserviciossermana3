@@ -109,6 +109,7 @@ public class PacienteServiceImpl implements PacienteService {
     private Paciente obtenerPacienteOException(Long id) {
         return pacienteRepository
                 .findById(id)
+                //Se puede hacer una sola consulta desde el repository por id estado registro
                 .filter(paciente ->
                         paciente.getEstadoRegistro() == EstadoRegistro.ACTIVO
                 )

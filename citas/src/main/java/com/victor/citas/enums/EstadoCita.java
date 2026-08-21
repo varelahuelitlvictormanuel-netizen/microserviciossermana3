@@ -15,17 +15,9 @@ public enum EstadoCita {
     PENDIENTE(1L, "Pendiente de confirmar", true, true) {
         @Override
         public Set<EstadoCita> puedeCambiar() {
-            return EnumSet.of(ACEPTADA, CANCELADA);
-        }
-    },
-
-    ACEPTADA(6L, "Cita aceptada por el médico", true, false) {
-        @Override
-        public Set<EstadoCita> puedeCambiar() {
             return EnumSet.of(CONFIRMADA, CANCELADA);
         }
     },
-
     CONFIRMADA(2L, "Confirmada por el paciente", true, false) {
         @Override
         public Set<EstadoCita> puedeCambiar() {
