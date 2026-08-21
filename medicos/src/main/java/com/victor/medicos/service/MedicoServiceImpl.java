@@ -49,7 +49,7 @@ public class MedicoServiceImpl implements MedicoService{
     public List<MedicoResponse> listar() {
         log.info("Buscando medicos activos...");
         return medicoRepository.findByEstadoRegistro(EstadoRegistro.ACTIVO).stream()
-            .map(medicoMapper::entidadAResponse).toList();
+                .map(medicoMapper::entidadAResponse).toList();
     }
 
     @Override
@@ -112,7 +112,7 @@ public class MedicoServiceImpl implements MedicoService{
     private void validarCambioUnicos(MedicoRequest request, Long id){
         log.info("validar info unica entre doctores ya existentes...");
         log.info("email a actulizar...");
-        if (medicoRepository.existsByCedulaProfesionalIgnoreCaseAndEstadoRegistroAndIdNot(request.email().trim(),
+        if (medicoRepository.existsByEmailIgnoreCaseAndEstadoRegistroAndIdNot(request.email().trim(),
                 EstadoRegistro.ACTIVO,id))
             throw new IllegalArgumentException("Ya existe un medico activo con el email ingresado");
         log.info("telefono o actualizar...");

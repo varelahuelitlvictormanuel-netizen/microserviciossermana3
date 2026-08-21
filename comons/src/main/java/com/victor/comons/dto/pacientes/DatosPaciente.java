@@ -6,6 +6,7 @@ public record DatosPaciente(
         String edad,
         String peso,
         String estatura,
+        String email,
         String imc,
         String telefono
 ) {

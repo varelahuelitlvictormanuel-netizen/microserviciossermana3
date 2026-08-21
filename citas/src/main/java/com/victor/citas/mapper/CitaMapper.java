@@ -12,21 +12,25 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class CitaMapper implements CommonMapper<CitaRequest, CitaResponse, Cita> {
+
     @Override
     public Cita requestAEntidad(CitaRequest request) {
-        if (request == null ) return null;
+
+        if (request== null ) return null;
+
         return Cita.crear(
                 request.idPaciente(),
                 request.idMedico(),
                 request.fechaCita(),
                 request.sintomas()
         );
-
     }
+
 
     @Override
-    public CitaResponse entidadAResponse(Cita entidad) {
-        if (entidad == null) return null;
+    public CitaResponse  entidadAResponse (Cita entidad) {
+        if (entidad == null)return null;
+
         return new CitaResponse(
                 entidad.getId(),
                 null,
@@ -36,44 +40,53 @@ public class CitaMapper implements CommonMapper<CitaRequest, CitaResponse, Cita>
                 entidad.getEstadoCita().getDescripcion()
         );
     }
-    public CitaResponse entidadAResponse(Cita entidad, PacienteResponse paciente, MedicoResponse medico) {
-        if (entidad == null) return null;
+
+    public CitaResponse  entidadAResponse (Cita entidad, PacienteResponse paciente, MedicoResponse medico) {
+
+        if (entidad == null)return null;
+
         return new CitaResponse(
                 entidad.getId(),
-                null,
-                null,
+                pacienteResponseADatosPaciente(paciente),
+                medicoResponseAResponseADatosMedico(medico),
                 entidad.getFechaCita(),
                 entidad.getSintomas(),
                 entidad.getEstadoCita().getDescripcion()
         );
     }
-    private DatosPaciente pacienteResponseADatosPaciente(PacienteResponse paciente){
+    private DatosPaciente pacienteResponseADatosPaciente(PacienteResponse paciente) {
         if (paciente == null) return null;
+
         return new DatosPaciente(
                 paciente.nombre(),
                 paciente.numExpediente(),
-                paciente.edad()+"años",
-                paciente.peso()+"kg.",
-                paciente.estatura()+"m", String.join("", Math.round(paciente.imc() * 100.0)/100.0 + "",
-                clasificacionIMC(paciente.imc())
-                ),
+                paciente.edad() + " años",
+                paciente.peso() + " kg.",
+                paciente.estatura() + " m.",
+                paciente.email(),
+                Math.round(paciente.imc() * 100.0) / 100.0 + " " +
+                        clasificacionIMC(paciente.imc()),
                 paciente.telefono()
         );
     }
+
     private String clasificacionIMC(double imc){
-        if (imc < 18.5) return "Bajo peso";
-        if (imc < 25) return "Peso normal";
-        if (imc < 30) return "Sobrepeso";
-        if (imc < 35) return "Obesidad grado I";
-        if (imc < 40) return "Obesidad grado II";
-        return "Obesidad grado III";
+        if (imc< 18.5) return "bajo peso";
+        if (imc< 25) return " peso normsl";
+        if (imc< 30) return "sobrepeso";
+        if (imc< 35) return "obesidad grado 1";
+        if (imc< 40) return "obesidad grado 2";
+
+        return  "obesidad grado 3";
     }
-    private DatosMedico medicoResponseADatosMedico(MedicoResponse medico){
-        if (medico == null) return null;
+
+    private DatosMedico medicoResponseAResponseADatosMedico(MedicoResponse medico){
+        if (medico== null) return null;
         return new DatosMedico(
                 medico.nombre(),
                 medico.cedulaProfesional(),
                 medico.especialidad()
+
         );
     }
 }

@@ -23,12 +23,12 @@ public class ValoresNumericosUtils {
         if (numero.compareTo(BigDecimal.ZERO) < 0)
             throw  new IllegalArgumentException(mesaje);
     }
-    public static void ValidarBigdecimalPositivo(Short numero, Short min, Short max,String mesaje){
+    public static void ValidarRangoShort(Short numero, Short min, Short max,String mesaje){
         validarNumeroRequerido(numero);
         if (numero <min || numero > max)
             throw  new IllegalArgumentException(mesaje);
     }
-    public static void ValidarBigdecimalPositivo(Double numero, Double min, Double max,String mesaje){
+    public static void ValidarRangoDouble(Double numero, Double min, Double max,String mesaje){
         validarNumeroRequerido(numero);
         if (numero <min || numero > max)
             throw  new IllegalArgumentException(mesaje);
