@@ -2,13 +2,9 @@ package com.victor.paciente.service;
 
 import com.victor.comons.dto.pacientes.PacienteRequest;
 import com.victor.comons.dto.pacientes.PacienteResponse;
-import com.victor.comons.dto.pacientes.PacienteRequest;
-import com.victor.comons.dto.pacientes.PacienteResponse;
 import com.victor.comons.enums.EstadoRegistro;
 import com.victor.comons.exceptions.RecursoNoEncontradoException;
 import com.victor.paciente.entity.Paciente;
-import com.victor.comons.enums.EstadoRegistro;
-import com.victor.comons.exceptions.RecursoNoEncontradoException;
 import com.victor.paciente.mapper.PacienteMapper;
 import com.victor.paciente.repository.PacienteRepository;
 import lombok.AllArgsConstructor;
@@ -30,83 +26,143 @@ public class PacienteServiceImpl implements PacienteService {
     @Override
     @Transactional(readOnly = true)
     public List<PacienteResponse> listar() {
+
         log.info("Listando pacientes activos...");
-        return pacienteRepository.findByEstadoRegistro(EstadoRegistro.ACTIVO)
-                .stream().map(pacienteMapper::entidadAResponse).toList();
+
+        return pacienteRepository
+                .findByEstadoRegistro(EstadoRegistro.ACTIVO)
+                .stream()
+                .map(pacienteMapper::entidadAResponse)
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public PacienteResponse obtenerPorId(Long id) {
-        log.info("Buscando paciente con id {}...", id);
-        return pacienteRepository.findById(id)
-                .filter(paciente -> paciente.getEstadoRegistro() ==EstadoRegistro.ACTIVO)
-                .map(pacienteMapper::entidadAResponse)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No se encontro registro con el id" + id));
+
+        log.info("Buscando paciente activo con id {}", id);
+
+        return pacienteMapper.entidadAResponse(
+                obtenerPacienteOException(id)
+        );
     }
 
     @Override
     @Transactional(readOnly = true)
     public PacienteResponse obtenerPacientePorIdSinEstado(Long id) {
-        log.warn("Buscando paciente con el id {}", id);
-        return pacienteMapper.entidadAResponse(obtenerPacienteOException(id));
+
+        log.info("Buscando paciente sin validar estado con id {}", id);
+
+        return pacienteMapper.entidadAResponse(
+                pacienteRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RecursoNoEncontradoException(
+                                        "Paciente no encontrado con id: " + id
+                                ))
+        );
     }
 
     @Override
     public PacienteResponse registrar(PacienteRequest request) {
         log.info("Registrando paciente...");
-        validarDatosUnicos(request.telefono(), request.email());
-
+        validarDatosUnicos(
+                request.telefono(),
+                request.email()
+        );
         Paciente paciente = pacienteMapper.requestAEntidad(request);
         pacienteRepository.save(paciente);
-        log.info("Paciente registrado...");
+        log.info("Paciente registrado correctamente");
         return pacienteMapper.entidadAResponse(paciente);
     }
-
     @Override
-    public PacienteResponse actualizar(PacienteRequest request, Long id) {
-        log.info("Buscando paciente con id {}", id);
+    public PacienteResponse actualizar(
+            PacienteRequest request,
+            Long id) {
+        log.info("Actualizando paciente con id {}", id);
         Paciente paciente = obtenerPacienteOException(id);
-
-        validarCambiosUnicos(request.telefono(), request.email(), id);
-
-        log.info("Actualizando informacion...");
-        paciente.actualizar(request.nombre(), request.apellidoPaterno(), request.apellidoMaterno(),
-                request.edad(), request.peso(), request.estatura(), request.email(), request.telefono(),
-                request.direccion());
-        log.info("Paciente actualizado...");
+        validarCambiosUnicos(
+                request.telefono(),
+                request.email(),
+                id
+        );
+        paciente.actualizar(
+                request.nombre(),
+                request.apellidoPaterno(),
+                request.apellidoMaterno(),
+                request.edad(),
+                request.peso(),
+                request.estatura(),
+                request.email(),
+                request.telefono(),
+                request.direccion()
+        );
+        log.info("Paciente actualizado correctamente");
         return pacienteMapper.entidadAResponse(paciente);
     }
-
     @Override
     public void eliminar(Long id) {
+        log.info("Eliminando lógicamente paciente con id {}", id);
         Paciente paciente = obtenerPacienteOException(id);
-        //TODO: Validar citas asociadas
         paciente.borradoLogico();
+        log.info("Paciente eliminado lógicamente");
+    }
+    private Paciente obtenerPacienteOException(Long id) {
+        return pacienteRepository
+                .findById(id)
+                .filter(paciente ->
+                        paciente.getEstadoRegistro() == EstadoRegistro.ACTIVO
+                )
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "Paciente no encontrado o eliminado con id: " + id
+                        )
+                );
+    }
+    private void validarDatosUnicos(
+            String telefono,
+            String email) {
+        if (pacienteRepository
+                .existsByEmailIgnoreCaseAndEstadoRegistro(
+                        email,
+                        EstadoRegistro.ACTIVO)) {
+
+            throw new IllegalArgumentException(
+                    "El email ya lo tiene registrado un paciente"
+            );
+        }
+        if (pacienteRepository
+                .existsByTelefonoAndEstadoRegistro(
+                        telefono,
+                        EstadoRegistro.ACTIVO)) {
+            throw new IllegalArgumentException(
+                    "El teléfono ya lo tiene registrado un paciente"
+            );
+        }
     }
 
-    public Paciente obtenerPacienteOException(Long id){
+    private void validarCambiosUnicos(
+            String telefono,
+            String email,
+            Long id) {
+        if (pacienteRepository
+                .existsByEmailIgnoreCaseAndEstadoRegistroAndIdNot(
+                        email,
+                        EstadoRegistro.ACTIVO,
+                        id)) {
+            throw new IllegalArgumentException(
+                    "El email ya lo tiene registrado otro paciente"
+            );
+        }
 
-        log.info("Buscando paciente con id: {}", id);
+        if (pacienteRepository
+                .existsByTelefonoAndEstadoRegistroAndIdNot(
+                        telefono,
+                        EstadoRegistro.ACTIVO,
+                        id)) {
 
-        return pacienteRepository.findById(id).orElseThrow(
-                () -> new RecursoNoEncontradoException("Paciente no encontrado con id: " + id)
-        );
+            throw new IllegalArgumentException(
+                    "El teléfono ya lo tiene registrado otro paciente"
+            );
+        }
     }
-    public void validarDatosUnicos(String telefono, String email){
-        if (pacienteRepository.existsByEmailIgnoreCaseAndEstadoRegistro(email, EstadoRegistro.ACTIVO))
-            throw new IllegalArgumentException("El email registrado ya lo tiene registrado un paciente");
-
-        if (pacienteRepository.existsByTelefonoAndEstadoRegistro(telefono, EstadoRegistro.ACTIVO))
-            throw new IllegalArgumentException("El telefono registrado ya lo tiene registrado un paciente");
-    }
-    public void validarCambiosUnicos(String telefono, String email, Long id){
-        if (pacienteRepository.existsByEmailIgnoreCaseAndEstadoRegistroAndIdNot(email, EstadoRegistro.ACTIVO, id))
-            throw new IllegalArgumentException("El email registrado ya lo tiene registrado un paciente");
-
-        if (pacienteRepository.existsByTelefonoAndEstadoRegistroAndIdNot(telefono, EstadoRegistro.ACTIVO, id))
-            throw new IllegalArgumentException("El telefono registrado ya lo tiene registrado un paciente");
-    }
-
-
 }
