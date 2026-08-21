@@ -77,6 +77,7 @@ public class Medico {
         ValoresNumericosUtils.validarRangoShort(edad, (short) 18, (short) 100,
                 "La edad es requerida y debe tener ser entre 18 y 100 años");
 
+
         if (especialidad == null)
             throw new IllegalArgumentException("La especialidad es requerida");
     }
@@ -118,5 +119,6 @@ public class Medico {
         this.cedulaProfesional = cedulaProfesional;
         this.especialidad = especialidad;
     }
+
 }
 

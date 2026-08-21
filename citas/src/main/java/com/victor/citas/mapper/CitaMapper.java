@@ -47,16 +47,19 @@ public class CitaMapper implements CommonMapper<CitaRequest, CitaResponse, Cita>
                 entidad.getEstadoCita().getDescripcion()
         );
     }
-    private DatosPaciente pacienteResponseADatosPaciente(PacienteResponse paciente){
-        if (paciente == null) return null;
+
+    private DatosPaciente pacienteResponseADatosPaciente(PacienteResponse paciente) {
+        if (paciente == null) {
+            return null;
+        }
         return new DatosPaciente(
                 paciente.nombre(),
                 paciente.numExpediente(),
-                paciente.edad()+"años",
-                paciente.peso()+"kg.",
-                paciente.estatura()+"m", String.join("", Math.round(paciente.imc() * 100.0)/100.0 + "",
-                clasificacionIMC(paciente.imc())
-                ),
+                paciente.edad() + " años",
+                paciente.peso() + " kg.",
+                paciente.estatura() + " m",
+                Math.round(paciente.imc() * 100.0) / 100.0 + "",
+                clasificacionIMC(paciente.imc()),
                 paciente.telefono()
         );
     }
