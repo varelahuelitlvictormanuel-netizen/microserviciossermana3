@@ -1,6 +1,5 @@
 package com.victor.citas.entity;
 
-
 import com.victor.citas.enums.EstadoCita;
 import com.victor.comons.enums.EstadoRegistro;
 import com.victor.comons.utils.StringCustomUtils;
@@ -10,15 +9,15 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-
 @Setter
+@Getter
 @Entity
 @Table(name = "CITAS")
-@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public class Cita {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID_CITA")
@@ -44,93 +43,74 @@ public class Cita {
     @Enumerated(EnumType.STRING)
     private EstadoRegistro estadoRegistro;
 
-    public static  void validarId(Long id , String campo){
-        ValoresNumericosUtils.validarLongPositivo(id ,
-                "el id es requerido y drbr der positivo ");
+
+    // ==================== VALIDACIONES ====================
+
+    public static void validarId(Long id) {
+        ValoresNumericosUtils.validarLongPositivo(
+                id,
+                "El id es requerido y debe ser positivo"
+        );
     }
-    private static  void validarFecha(LocalDateTime fechaCita){
-        if (fechaCita== null || !fechaCita.isAfter(LocalDateTime.now()))
-            throw new IllegalArgumentException("la fecha cita es requerida");
+
+    private static void validarFecha(LocalDateTime fechaCita) {
+        if (fechaCita == null || !fechaCita.isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException(
+                    "La fecha de la cita es requerida"
+            );
+        }
     }
 
-    public static void validarDatos(Long idPaciente, Long idMedico, LocalDateTime fechaCita, String sintomas){
-
-
-        validarId(idPaciente, "paciente");
-        validarId(idMedico, "medico");
+    public static void validarDatos(
+            Long idPaciente,
+            Long idMedico,
+            LocalDateTime fechaCita,
+            String sintomas
+    ) {
+        validarId(idPaciente);
+        validarId(idMedico);
         validarFecha(fechaCita);
 
-        StringCustomUtils.validarTamanio(sintomas,20 , 300,
-                " los sintomas son requeridos ");
+        StringCustomUtils.validarTamanio(
+                sintomas,
+                20,
+                300,
+                "Los síntomas son requeridos"
+        );
     }
 
-    private void validarNoEliminada(){
-        if (this.estadoRegistro == EstadoRegistro.ELIMINADO)
-            throw  new IllegalStateException("la cita ya esta eliminada");
-    }
+    private void validarOperacionPermitida(boolean actualizacion) {
 
-    private void  validarEliminacionPermitida(){
-
-        validarNoEliminada();
-        if (!estadoCita.isEliminable())
-            throw  new IllegalStateException("la cita con estado"+ estadoCita
-                    + " no puede eliminarse");
-
-    }
-
-    private void  validarActualizacionPermitida(){
-
-        validarNoEliminada();
-        if (!estadoCita.isActualizable())
-            throw  new IllegalStateException("la cita con estado"+ estadoCita
-                    + " no puede eliminarse");
-
-    }
-
-    public void eliminar(){
-
-        validarEliminacionPermitida();
-        this.estadoRegistro = EstadoRegistro.ELIMINADO;
-    }
-
-    public void actualizar (Long idPaciente, Long idMedico,
-                            LocalDateTime fechaCita, String sintomas
-    ){
-
-        validarActualizacionPermitida();
-        validarDatos(idPaciente, idMedico, fechaCita, sintomas);
-
-
-        this.idPaciente = idPaciente;
-        this.idMedico= idMedico;
-        this.fechaCita = fechaCita;
-        this.sintomas = sintomas.trim();
-    }
-
-    public void actualizarEstadoCita(EstadoCita nuevoEstado) {
-
-        if (nuevoEstado == null) {
-            throw new IllegalArgumentException(
-                    "el nuevo estado de la cita es requerido"
-            );
-        }
-
-        if (!this.estadoCita.puedeCambiarA(nuevoEstado)) {
+        if (estadoRegistro == EstadoRegistro.ELIMINADO) {
             throw new IllegalStateException(
-                    "la cita con estado "
-                            + this.estadoCita
-                            + " solo puede cambiar a "
-                            + this.estadoCita.puedeCambiar()
+                    "La cita ya está eliminada"
             );
         }
 
-        this.estadoCita = nuevoEstado;
+        if (actualizacion && !estadoCita.isActualizable()) {
+            throw new IllegalStateException(
+                    "La cita con estado " + estadoCita +
+                            " no puede actualizarse"
+            );
+        }
+
+        if (!actualizacion && !estadoCita.isEliminable()) {
+            throw new IllegalStateException(
+                    "La cita con estado " + estadoCita +
+                            " no puede eliminarse"
+            );
+        }
     }
 
 
-    public  static  Cita crear( Long idPaciente,
-                                Long idMedico, LocalDateTime fechaCita, String sintomas){
+    // ==================== MÉTODOS DE NEGOCIO ====================
 
+    public static Cita crear(
+            Long idPaciente,
+            Long idMedico,
+            LocalDateTime fechaCita,
+            String sintomas
+    ) {
         validarDatos(idPaciente, idMedico, fechaCita, sintomas);
 
         return Cita.builder()
@@ -141,5 +121,43 @@ public class Cita {
                 .estadoCita(EstadoCita.PENDIENTE)
                 .estadoRegistro(EstadoRegistro.ACTIVO)
                 .build();
+    }
+
+    public void actualizar(
+            Long idPaciente,
+            Long idMedico,
+            LocalDateTime fechaCita,
+            String sintomas
+    ) {
+        validarOperacionPermitida(true);
+        validarDatos(idPaciente, idMedico, fechaCita, sintomas);
+
+        this.idPaciente = idPaciente;
+        this.idMedico = idMedico;
+        this.fechaCita = fechaCita;
+        this.sintomas = sintomas.trim();
+    }
+
+    public void eliminar() {
+        validarOperacionPermitida(false);
+        this.estadoRegistro = EstadoRegistro.ELIMINADO;
+    }
+
+    public void actualizarEstadoCita(EstadoCita nuevoEstado) {
+
+        if (nuevoEstado == null) {
+            throw new IllegalArgumentException(
+                    "El nuevo estado de la cita es requerido"
+            );
+        }
+
+        if (!estadoCita.puedeCambiarA(nuevoEstado)) {
+            throw new IllegalStateException(
+                    "La cita con estado " + estadoCita +
+                            " solo puede cambiar a " + estadoCita.puedeCambiar()
+            );
+        }
+
+        this.estadoCita = nuevoEstado;
     }
 }
